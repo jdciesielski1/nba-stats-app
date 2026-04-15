@@ -16,6 +16,18 @@ from nba_api.stats.endpoints import (
     shotchartdetail,
 )
 import math, traceback, time
+import nba_api.library.http as nba_http
+
+# Spoof a real browser to avoid NBA.com blocking cloud server IPs
+nba_http.requests_session.headers.update({
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+    'Referer': 'https://www.nba.com/',
+    'Origin': 'https://www.nba.com',
+    'Accept': 'application/json, text/plain, */*',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'x-nba-stats-origin': 'stats',
+    'x-nba-stats-token': 'true',
+})
 
 app = Flask(__name__)
 
