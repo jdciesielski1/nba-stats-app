@@ -33,7 +33,8 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;line-
 
 /* Search */
 .search-wrap{margin-bottom:28px}
-.search-inner{position:relative;max-width:440px}
+.search-inner{position:relative;max-width:540px}
+.search-inner input{font-size:16px;padding:15px 50px 15px 20px}
 .search-inner input{width:100%;background:var(--card);border:1.5px solid var(--border2);border-radius:var(--radius);color:var(--text);font-family:'Inter',sans-serif;font-size:15px;padding:13px 46px 13px 18px;outline:none;transition:border-color .2s,box-shadow .2s}
 .search-inner input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(245,158,11,.15)}
 .search-inner input::placeholder{color:var(--muted)}
@@ -261,13 +262,13 @@ td.pm-pos{color:var(--green)} td.pm-neg{color:var(--red)}
     <div class="error-bar" id="error-bar"></div>
     <div class="loading" id="loading"><div class="spinner"></div><div class="loading-text">Loading player data&hellip;</div></div>
 
-    <div class="empty" id="empty">
+    <div class="empty" id="empty" style="display:block">
       <div class="empty-emoji">🏀</div>
       <div class="empty-title">Search for a player</div>
       <div class="empty-sub">Type a name above to look up stats, shot chart, and more</div>
     </div>
 
-    <div id="player-view">
+    <div id="player-view" style="display:none">
       <div class="hero" id="hero"></div>
 
       <div class="section">
@@ -470,18 +471,36 @@ async function loadPlayer(id) {
   currentPlayerId = id; allShots = [];
   setLoading(true); clearError();
   try {
+    // Call 1: core data -- renders immediately
     const res = await fetch('/api/player/' + id);
     const d = await res.json();
     if (d.error) throw new Error(d.error);
     render(d);
     loadShotChart(id, d.current_season_id);
+    // Call 2: extras (ranks + lookalike) -- loads in background
+    loadPlayerExtras(id, d);
   } catch(e) {
     showError('Failed to load: ' + e.message);
   } finally { setLoading(false); }
 }
 
+async function loadPlayerExtras(id, coreData) {
+  try {
+    const res = await fetch('/api/player/' + id + '/extras');
+    const extras = await res.json();
+    if (extras.error) return; // fail silently
+    // Update season tiles with ranks now that we have them
+    renderSeasonTiles(coreData.current_season, extras.season_ranks, coreData.current_season_id);
+    // Update lookalike
+    renderLookalike(extras.lookalike, coreData.info);
+  } catch(e) {
+    console.warn('Extras failed:', e.message);
+  }
+}
+
 function render(d) {
   emptyEl.style.display = 'none';
+  loading.classList.remove('show');
   playerView.style.display = 'block';
   renderHero(d.info, 'hero');
   renderCareerTiles(d.career_totals);
