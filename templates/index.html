@@ -88,9 +88,6 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;line-
 .tile-rank.top25{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.2)}
 .tile-rank.rest{background:rgba(255,255,255,.05);color:var(--muted);border:1px solid var(--border)}
 .tile-rank.na{display:none}
-.tile-per{border-color:rgba(167,139,250,.3)}
-.tile-per .tile-val{color:var(--purple)}
-.tile-per:hover{border-color:var(--purple)}
 
 /* Tables */
 .tbl-wrap{overflow-x:auto;border:1.5px solid var(--border);border-radius:var(--radius)}
@@ -214,48 +211,6 @@ td.pm-pos{color:var(--green)} td.pm-neg{color:var(--red)}
 /* Also show lookalike in player stats view */
 .lookalike-section .lookalike-grid{grid-template-columns:1fr}
 
-/* ── League leaders ── */
-#leaders-tab{display:none}
-.leaders-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px}
-.leaders-card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden}
-.leaders-card-head{background:var(--card2);padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.leaders-card-title{font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
-.leaders-card-sub{font-size:11px;color:var(--muted)}
-.leaders-row{display:flex;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border);gap:12px;transition:background .1s}
-.leaders-row:last-child{border-bottom:none}
-.leaders-row:hover{background:rgba(255,255,255,.025)}
-.leaders-rank{font-family:'Oswald',sans-serif;font-size:18px;font-weight:700;color:var(--border2);min-width:24px;text-align:center}
-.leaders-rank.gold{color:#f59e0b}
-.leaders-rank.silver{color:#94a3b8}
-.leaders-rank.bronze{color:#b45309}
-.leaders-info{flex:1;min-width:0}
-.leaders-name{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.leaders-team{font-size:11px;color:var(--muted);margin-top:1px}
-.leaders-val{font-family:'Oswald',sans-serif;font-size:24px;font-weight:700;color:var(--accent);min-width:52px;text-align:right}
-.leaders-bar-wrap{width:90px;flex-shrink:0}
-.leaders-bar-track{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:4px}
-.leaders-bar-fill{height:4px;background:var(--accent);border-radius:2px}
-
-.top-games-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-.top-game-row{display:flex;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border);gap:12px;transition:background .1s}
-.top-game-row:last-child{border-bottom:none}
-.top-game-row:hover{background:rgba(255,255,255,.025)}
-.tgr-rank{font-family:'Oswald',sans-serif;font-size:16px;font-weight:700;color:var(--border2);min-width:20px;text-align:center}
-.tgr-rank.gold{color:#f59e0b}
-.tgr-info{flex:1;min-width:0}
-.tgr-name{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tgr-ctx{font-size:11px;color:var(--muted);margin-top:1px}
-.tgr-val{font-family:'Oswald',sans-serif;font-size:22px;font-weight:700;color:var(--accent);min-width:46px;text-align:right}
-
-.leaders-loading{text-align:center;padding:64px 0}
-.leaders-loading .spinner{margin:0 auto 14px}
-.leaders-loading-text{color:var(--sub);font-size:13px;letter-spacing:.06em;text-transform:uppercase}
-
-@media(max-width:700px){
-  .leaders-grid{grid-template-columns:1fr}
-  .top-games-grid{grid-template-columns:1fr}
-}
-
 .cmp-shot-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .cmp-shot-card{}
 .cmp-shot-label{font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:0 0 8px 2px}
@@ -291,7 +246,6 @@ td.pm-pos{color:var(--green)} td.pm-neg{color:var(--red)}
   <div class="tabs">
     <button class="tab-btn active" data-tab="stats">Player Stats</button>
     <button class="tab-btn" data-tab="compare">Compare Players</button>
-    <button class="tab-btn" data-tab="leaders">League Leaders</button>
   </div>
 
   <!-- ══ STATS TAB ══════════════════════════════════════════ -->
@@ -329,12 +283,6 @@ td.pm-pos{color:var(--green)} td.pm-neg{color:var(--red)}
         <div class="tiles" id="season-tiles"></div>
       </div>
 
-      <!-- Look-alike in player view -->
-      <div class="section lookalike-section" id="lookalike-section" style="display:none">
-        <div class="section-head">Most Similar Player This Season</div>
-        <div class="lookalike-grid" id="lookalike-single"></div>
-      </div>
-
       <!-- Shot Chart -->
       <div class="section">
         <div class="section-head">Shot Chart <span class="section-sub" id="sc-season-label"></span></div>
@@ -357,6 +305,12 @@ td.pm-pos{color:var(--green)} td.pm-neg{color:var(--red)}
           </div>
           <div class="shot-summary" id="shot-summary" style="display:none"></div>
         </div>
+      </div>
+
+      <!-- Look-alike in player view -->
+      <div class="section lookalike-section" id="lookalike-section" style="display:none">
+        <div class="section-head">Most Similar Player This Season</div>
+        <div class="lookalike-grid" id="lookalike-single"></div>
       </div>
 
       <div class="section">
@@ -450,24 +404,6 @@ td.pm-pos{color:var(--green)} td.pm-neg{color:var(--red)}
     </div>
   </div><!-- /compare-tab -->
 
-  <!-- ══ LEADERS TAB ══════════════════════════════════════ -->
-  <div id="leaders-tab">
-    <div class="leaders-loading" id="leaders-loading" style="display:none">
-      <div class="spinner"></div>
-      <div class="leaders-loading-text">Loading league leaders&hellip;</div>
-    </div>
-    <div id="leaders-content" style="display:none">
-      <div class="section">
-        <div class="section-head">Per-Game Leaders <span class="section-sub" id="leaders-gp-sub"></span></div>
-        <div class="leaders-grid" id="leaders-pg-grid"></div>
-      </div>
-      <div class="section">
-        <div class="section-head">Top Individual Performances</div>
-        <div class="top-games-grid" id="leaders-games-grid"></div>
-      </div>
-    </div>
-  </div><!-- /leaders-tab -->
-
 </div><!-- /page -->
 <div id="sc-tooltip"></div>
 
@@ -480,8 +416,6 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     const tab = btn.dataset.tab;
     document.getElementById('stats-tab').style.display   = tab === 'stats'   ? 'block' : 'none';
     document.getElementById('compare-tab').style.display = tab === 'compare' ? 'block' : 'none';
-    document.getElementById('leaders-tab').style.display = tab === 'leaders' ? 'block' : 'none';
-    if (tab === 'leaders' && !leadersLoaded) loadLeaders();
   });
 });
 
@@ -584,7 +518,6 @@ const TILE_STATS=[
   {k:'FG_PCT',label:'FG%',pct:true},{k:'FG3_PCT',label:'3P%',pct:true},
   {k:'FT_PCT',label:'FT%',pct:true},{k:'GP',label:'Games'},
 ];
-// PER tile is rendered separately since it comes from ranks not season_row
 
 function renderCareerTiles(career) {
   if (!career?.length) { document.getElementById('career-tiles').innerHTML='<span style="color:var(--muted);font-size:13px">No data</span>'; return; }
@@ -620,20 +553,12 @@ function renderSeasonTiles(row, ranks, seasonId) {
   const total=ranks?.total_players;
   headLabel.textContent=(seasonId||'Current Season')+' Averages';
   rankSub.textContent=total?`ranked among ${total} qualified players`:'';
-  let tilesHTML = TILE_STATS.map(({k,label,pct})=>{
+  tilesEl.innerHTML=TILE_STATS.map(({k,label,pct})=>{
     let v=row[k]; if(v==null) return '';
     const disp=pct?(v*100).toFixed(1)+'%':(typeof v==='number'?v.toFixed(1):v);
     const badge=(k!=='GP')?rankBadge(ranks?.[k],total):'';
     return `<div class="tile"><div class="tile-val">${disp}</div><div class="tile-label">${label}</div>${badge}</div>`;
   }).join('');
-
-  // Append PER tile if available
-  if (ranks?.PER_val != null) {
-    const perLabel = ranks.PER_key === 'PIE' ? 'PIE%' : 'PER';
-    const badge = rankBadge(ranks.PER, total);
-    tilesHTML += `<div class="tile tile-per"><div class="tile-val">${ranks.PER_val}</div><div class="tile-label">${perLabel}</div>${badge}</div>`;
-  }
-  tilesEl.innerHTML = tilesHTML;
 }
 
 function renderLookalike(la, playerInfo) {
@@ -659,7 +584,6 @@ function lookalikCardHTML(la, forName, shotChartSlot) {
     {k:'FG_PCT',  label:'FG%',  pct:true},
     {k:'FG3_PCT', label:'3P%',  pct:true},
     {k:'FT_PCT',  label:'FT%',  pct:true},
-    {k:'PIE',     label:'PIE%'},  // already multiplied by 100 in backend
   ];
   const statsHTML = AVG_STATS.map(({k, label, pct}) => {
     const v = la.stats?.[k];
@@ -848,14 +772,14 @@ function renderTable(id,cols,rows,sortable){
 const renderSeasons = rows => renderTable('seasons-tbl',S_COLS,rows,true);
 const renderGames   = rows => renderTable('games-tbl',G_COLS,rows,false);
 
+const HIGH_CATS=['PTS','REB','AST','STL','BLK','FGM','FG3M','FTM','OREB','DREB'];
 function renderHighs(gameH,seasonH){
   function card(title,rows){
     if(!rows?.length) return `<div class="highs-card"><div class="highs-card-head">${title}</div><div class="highs-empty">No data</div></div>`;
-    // API returns STAT (not STAT_CATEGORY); GAME_DATE is human-readable e.g. "OCT 23 2025"
-    const items=rows.slice(0,10).map(r=>({
-      stat:r.STAT||r.STAT_CATEGORY||r.PT_CATEGORY||'',
-      val:r.STAT_VALUE??r.VALUE??'—',
-      ctx:r.GAME_DATE||r.DATE_EST||r.SEASON_ID||'',
+    const filtered=rows.filter(r=>HIGH_CATS.includes(r.STAT_CATEGORY||r.PT_CATEGORY||'')).slice(0,10);
+    const items=(filtered.length?filtered:rows.slice(0,10)).map(r=>({
+      stat:r.STAT_CATEGORY||r.PT_CATEGORY||'',val:r.STAT_VALUE??r.VALUE??'—',
+      ctx:r.DATE_EST||r.GAME_DATE||r.SEASON_ID||'',
     }));
     return `<div class="highs-card"><div class="highs-card-head">${title}</div>
       ${items.map(i=>`<div class="highs-row"><span class="highs-stat">${i.stat}</span><span class="highs-val">${i.val}</span><span class="highs-ctx">${i.ctx}</span></div>`).join('')}
@@ -1040,115 +964,6 @@ function drawCmpShotChart(shots, svgEl, summaryEl) {
   ].map(i=>`<div class="ss-item"><div class="ss-val">${i.val}</div><div class="ss-label">${i.label}</div></div>`).join('');
   summaryEl.style.display = 'flex';
   svgEl.style.display = 'block';
-}
-
-// ── League Leaders ───────────────────────────────────────────
-let leadersLoaded = false;
-
-async function loadLeaders() {
-  document.getElementById('leaders-loading').style.display = 'block';
-  document.getElementById('leaders-content').style.display = 'none';
-  try {
-    const res = await fetch('/api/leaders');
-    const d = await res.json();
-    if (d.error) throw new Error(d.error);
-    renderLeaders(d);
-    leadersLoaded = true;
-  } catch(e) {
-    document.getElementById('leaders-loading').innerHTML =
-      `<div style="color:var(--red);font-size:13px">Failed to load leaders: ${e.message}</div>`;
-  }
-}
-
-const LEAD_LABELS = {PTS:'Points',REB:'Rebounds',AST:'Assists',STL:'Steals',BLK:'Blocks'};
-const LEAD_ORDER  = ['PTS','REB','AST','STL','BLK'];
-
-function rankCls(i) {
-  return i===0?'gold':i===1?'silver':i===2?'bronze':'';
-}
-
-function renderLeaders(d) {
-  document.getElementById('leaders-loading').style.display = 'none';
-  document.getElementById('leaders-content').style.display = 'block';
-  document.getElementById('leaders-gp-sub').textContent =
-    `min ${d.min_gp} GP of ${d.max_gp} (65% threshold) &middot; ${d.season}`;
-
-  // Per-game leaders cards (including PER)
-  const pgGrid = document.getElementById('leaders-pg-grid');
-  const allPgCards = [...LEAD_ORDER];
-  let pgCardsHTML = allPgCards.map(stat => {
-    const rows = d.pg_leaders?.[stat] || [];
-    const maxVal = rows[0]?.value || 1;
-    return `<div class="leaders-card">
-      <div class="leaders-card-head">
-        <span class="leaders-card-title">${LEAD_LABELS[stat]}</span>
-        <span class="leaders-card-sub">Per Game</span>
-      </div>
-      ${rows.map((r, i) => `
-        <div class="leaders-row">
-          <div class="leaders-rank ${rankCls(i)}">${i+1}</div>
-          <div class="leaders-info">
-            <div class="leaders-name">${r.player_name}</div>
-            <div class="leaders-team">${r.team} &middot; ${r.gp} GP</div>
-          </div>
-          <div class="leaders-bar-wrap">
-            <div class="leaders-bar-track">
-              <div class="leaders-bar-fill" style="width:${Math.round((r.value/maxVal)*100)}%"></div>
-            </div>
-          </div>
-          <div class="leaders-val">${r.value}</div>
-        </div>`).join('')}
-    </div>`;
-  }).join('');
-
-  // PER / PIE card
-  if (d.per_leaders?.length) {
-    const perRows = d.per_leaders;
-    const perLabel = perRows[0]?.per_key === 'PIE' ? 'PIE%' : 'PER';
-    const maxPer = perRows[0]?.value || 1;
-    pgCardsHTML += `<div class="leaders-card">
-      <div class="leaders-card-head">
-        <span class="leaders-card-title">${perLabel}</span>
-        <span class="leaders-card-sub">Player Efficiency</span>
-      </div>
-      ${perRows.map((r, i) => `
-        <div class="leaders-row">
-          <div class="leaders-rank ${rankCls(i)}">${i+1}</div>
-          <div class="leaders-info">
-            <div class="leaders-name">${r.player_name}</div>
-            <div class="leaders-team">${r.team} &middot; ${r.gp} GP</div>
-          </div>
-          <div class="leaders-bar-wrap">
-            <div class="leaders-bar-track">
-              <div class="leaders-bar-fill" style="width:${Math.round((r.value/maxPer)*100)}%"></div>
-            </div>
-          </div>
-          <div class="leaders-val">${r.value}</div>
-        </div>`).join('')}
-    </div>`;
-  }
-  pgGrid.innerHTML = pgCardsHTML;
-
-  // Top individual game performances
-  const gamesGrid = document.getElementById('leaders-games-grid');
-  gamesGrid.innerHTML = LEAD_ORDER.map(stat => {
-    const rows = d.top_games?.[stat] || [];
-    return `<div class="leaders-card">
-      <div class="leaders-card-head">
-        <span class="leaders-card-title">${LEAD_LABELS[stat]}</span>
-        <span class="leaders-card-sub">Single Game</span>
-      </div>
-      ${rows.map((r, i) => `
-        <div class="top-game-row">
-          <div class="tgr-rank ${rankCls(i)}">${i+1}</div>
-          <div class="tgr-info">
-            <div class="tgr-name">${r.player_name}</div>
-            <div class="tgr-ctx">${r.matchup} &middot; ${r.game_date}</div>
-          </div>
-          <div class="tgr-val">${r.value}</div>
-        </div>`).join('')}
-    </div>`;
-  }).join('');
 }
 
 // ── Shared helpers ────────────────────────────────────────────
