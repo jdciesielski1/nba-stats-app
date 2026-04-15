@@ -3,7 +3,7 @@ NBA Player Stats Web App
 Requires: pip install flask nba_api
 Run:      python app.py
 """
-import os
+
 from flask import Flask, jsonify, render_template_string, request
 from nba_api.stats.static import players
 from nba_api.stats.endpoints import (
@@ -67,12 +67,14 @@ def result_set_to_dicts(endpoint_obj, set_name: str) -> list:
 
 
 def get_career_stats(player_id: int) -> dict:
-    try:
-        career = nba_call(lambda: playercareerstats.PlayerCareerStats(
-            player_id=player_id, per_mode_simple="PerGame", timeout=TIMEOUT))
-    except (TypeError, RuntimeError):
-        career = nba_call(lambda: playercareerstats.PlayerCareerStats(
-            player_id=player_id, per_mode36="PerGame", timeout=TIMEOUT))
+    def _career_call():
+        try:
+            return playercareerstats.PlayerCareerStats(
+                player_id=player_id, per_mode_simple="PerGame", timeout=TIMEOUT)
+        except TypeError:
+            return playercareerstats.PlayerCareerStats(
+                player_id=player_id, per_mode36="PerGame", timeout=TIMEOUT)
+    career = nba_call(_career_call)
     return {
         "seasons": result_set_to_dicts(career, "SeasonTotalsRegularSeason"),
         "career":  result_set_to_dicts(career, "CareerTotalsRegularSeason"),
@@ -87,14 +89,7 @@ def get_recent_games(player_id: int, season: str = CURRENT_SEASON) -> list:
 
 
 def get_career_highs(player_id: int) -> dict:
-    # per_mode was removed in newer nba_api versions -- try without it directly
-    try:
-        profile = nba_call(lambda: playerprofilev2.PlayerProfileV2(
-            player_id=player_id, timeout=TIMEOUT))
-    except Exception:
-        raise
     def dedup_highs(rows: list) -> list:
-        """Keep only the first (highest) occurrence of each stat category."""
         seen = set()
         out = []
         for r in rows:
@@ -104,10 +99,16 @@ def get_career_highs(player_id: int) -> dict:
                 out.append(r)
         return out
 
-    return {
-        "game_highs":   dedup_highs(result_set_to_dicts(profile, "CareerHighs")),
-        "season_highs": dedup_highs(result_set_to_dicts(profile, "SeasonHighs")),
-    }
+    try:
+        profile = nba_call(lambda: playerprofilev2.PlayerProfileV2(
+            player_id=player_id, timeout=TIMEOUT))
+        return {
+            "game_highs":   dedup_highs(result_set_to_dicts(profile, "CareerHighs")),
+            "season_highs": dedup_highs(result_set_to_dicts(profile, "SeasonHighs")),
+        }
+    except Exception as e:
+        print(f"[highs] failed for player {player_id}: {e}", flush=True)
+        return {"game_highs": [], "season_highs": []}
 
 
 def get_player_info(player_id: int) -> dict:
@@ -116,8 +117,9 @@ def get_player_info(player_id: int) -> dict:
     return rows[0] if rows else {}
 
 
-# Cache league stats in memory for the session to avoid re-fetching
+# Cache league stats and player data in memory for the session
 _league_cache: dict = {}
+_player_cache: dict = {}
 
 def get_league_stats(season: str = CURRENT_SEASON) -> list:
     cache_key = f"{season}_pergame"
@@ -465,6 +467,11 @@ def api_search():
 
 @app.route("/api/player/<int:player_id>")
 def api_player(player_id):
+    # Return core player data quickly -- no league stats or lookalike
+    cache_key = f"core_{player_id}"
+    if cache_key in _player_cache:
+        print(f"[cache] serving player {player_id} core from cache", flush=True)
+        return jsonify(_player_cache[cache_key])
     try:
         info        = get_player_info(player_id)
         career_data = get_career_stats(player_id)
@@ -482,11 +489,7 @@ def api_player(player_id):
             if last.get("SEASON_ID","") == CURRENT_SEASON or last.get("SEASON_ID","").startswith(CURRENT_SEASON[:4]):
                 current_season_row = last
 
-        season_ranks = get_season_ranks(player_id) if current_season_row else {}
-        lookalike    = get_lookalike(player_id) if current_season_row else {}
-        # PER value is embedded in season_ranks as PER_val / PER_key
-
-        return jsonify({
+        result = {
             "info":              info,
             "seasons":           seasons,
             "career_totals":     career_data["career"],
@@ -494,10 +497,37 @@ def api_player(player_id):
             "game_highs":        highs["game_highs"],
             "season_highs":      highs["season_highs"],
             "current_season":    current_season_row,
-            "season_ranks":      season_ranks,
             "current_season_id": CURRENT_SEASON,
-            "lookalike":         lookalike,
-        })
+            "season_ranks":      {},
+            "lookalike":         {},
+        }
+        _player_cache[cache_key] = result
+        return jsonify(result)
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/player/<int:player_id>/extras")
+def api_player_extras(player_id):
+    # Return rankings + lookalike -- slower, loads after core
+    cache_key = f"extras_{player_id}"
+    if cache_key in _player_cache:
+        print(f"[cache] serving player {player_id} extras from cache", flush=True)
+        return jsonify(_player_cache[cache_key])
+    try:
+        core = _player_cache.get(f"core_{player_id}", {})
+        has_current = core.get("current_season") is not None
+
+        season_ranks = get_season_ranks(player_id) if has_current else {}
+        lookalike    = get_lookalike(player_id)    if has_current else {}
+
+        result = {
+            "season_ranks": season_ranks,
+            "lookalike":    lookalike,
+        }
+        _player_cache[cache_key] = result
+        return jsonify(result)
     except Exception as e:
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
@@ -526,8 +556,13 @@ def api_compare():
 def api_shotchart(player_id):
     try:
         season = request.args.get("season", CURRENT_SEASON)
+        cache_key = f"shots_{player_id}_{season}"
+        if cache_key in _player_cache:
+            return jsonify(_player_cache[cache_key])
         shots = get_shot_chart(player_id, season)
-        return jsonify({"shots": shots, "season": season})
+        result = {"shots": shots, "season": season}
+        _player_cache[cache_key] = result
+        return jsonify(result)
     except Exception as e:
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
@@ -589,5 +624,4 @@ def index():
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5050))
-    app.run(host="0.0.0.0", port=port)
+    app.run(debug=True, port=5050)
