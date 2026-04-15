@@ -16,10 +16,10 @@ from nba_api.stats.endpoints import (
     shotchartdetail,
 )
 import math, traceback, time
-import nba_api.library.http as nba_http
+import requests as _requests
 
 # Spoof a real browser to avoid NBA.com blocking cloud server IPs
-nba_http.requests_session.headers.update({
+_NBA_HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
     'Referer': 'https://www.nba.com/',
     'Origin': 'https://www.nba.com',
@@ -27,7 +27,23 @@ nba_http.requests_session.headers.update({
     'Accept-Language': 'en-US,en;q=0.9',
     'x-nba-stats-origin': 'stats',
     'x-nba-stats-token': 'true',
-})
+}
+try:
+    import nba_api.library.http as nba_http
+    # Try different attribute names across nba_api versions
+    if hasattr(nba_http, 'requests_session'):
+        nba_http.requests_session.headers.update(_NBA_HEADERS)
+    elif hasattr(nba_http, 'NBAStatsHTTP'):
+        nba_http.NBAStatsHTTP.headers = _NBA_HEADERS
+    else:
+        # Patch the requests module directly as fallback
+        _orig_get = _requests.get
+        def _patched_get(url, **kwargs):
+            kwargs.setdefault('headers', {}).update(_NBA_HEADERS)
+            return _orig_get(url, **kwargs)
+        _requests.get = _patched_get
+except Exception as _e:
+    print(f"[headers] could not set NBA headers: {_e}", flush=True)
 
 app = Flask(__name__)
 
